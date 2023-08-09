@@ -1,0 +1,11 @@
+(debuglog "Hello, World, here is an atom:" :iamanatom)
+(defun myfun (var) (debuglog var)) 
+(myfun :myfunworks)
+((lambda (a) (debuglog a)) :atom)
+(debuglog a)
+(def helloworld (pure "hello world"))
+(debuglog helloworld (helloworld))
+(defun + () (seq
+    (debuglog "also multiplication")
+    (debuglog "addition")))
+(debuglog +)
