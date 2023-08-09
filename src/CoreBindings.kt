@@ -92,7 +92,7 @@ object CoreBindings {
                 is LispData.LispNode -> resolved.node.toSource()
                 is LispData.LispString -> resolved.string
                 is LispData.LispNumber -> resolved.value.toString()
-                is LispData.LispInterpretedCallable -> "<function ${resolved.name ?: ""} ${resolved.argNames} ${resolved.body.toSource()}>"
+                is LispData.LispInterpretedCallable -> "<function ${resolved.name ?: "<anonymous>"} ${resolved.argNames} ${resolved.body.toSource()}>"
             }
         })
         LispData.LispNil
@@ -106,9 +106,49 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
+    val sub = LispData.externalCall { args, reportError ->
+        if (args.size == 0) {
+            return@externalCall reportError("Cannot call sub without at least 1 argument")
+        }
+        val c = args.map {
+            (it as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $it, expected number")
+                    ).value
+        }
+        LispData.LispNumber(args.drop(1).fold(c.first()) { a, b ->
+            a - (b as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
+        })
+    }
+    val mul = LispData.externalCall { args, reportError ->
+        if (args.size == 0) {
+            return@externalCall reportError("Cannot call mul without at least 1 argument")
+        }
+        LispData.LispNumber(args.fold(1.0) { a, b ->
+            a * (b as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
+        })
+    }
+    val div = LispData.externalCall { args, reportError ->
+        if (args.size == 0) {
+            return@externalCall reportError("Cannot call div without at least 1 argument")
+        }
+        val c = args.map {
+            (it as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $it, expected number")
+                    ).value
+        }
+        LispData.LispNumber(args.drop(1).fold(c.first()) { a, b ->
+            a / (b as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
+        })
+    }
 
     fun offerArithmeticTo(bindings: StackFrame) {
         bindings.setValueLocal("+", add)
+        bindings.setValueLocal("/", div)
+        bindings.setValueLocal("*", mul)
+        bindings.setValueLocal("-", sub)
     }
 
     fun offerAllTo(bindings: StackFrame) {

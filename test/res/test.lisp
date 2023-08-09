@@ -5,4 +5,7 @@
 (debuglog a)
 (def helloworld (pure "hello world"))
 (debuglog helloworld (helloworld))
-(debuglog + (+ 1.2 15))
+(debuglog "+" (+ 1.2 15))
+(debuglog "-" (- 1 3))
+(debuglog "*" (* 10 10))
+(debuglog "/" (/ 1 3 2))
