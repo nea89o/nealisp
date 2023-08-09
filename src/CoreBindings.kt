@@ -83,18 +83,22 @@ object CoreBindings {
         lastResult ?: context.reportError("Seq cannot be invoked with 0 argumens", callsite)
     }
 
+    private fun stringify(thing: LispData): String {
+        return when (thing) {
+            is LispData.Atom -> ":${thing.label}"
+            is LispData.JavaExecutable -> "<native code>"
+            LispData.LispNil -> "nil"
+            is LispData.LispNode -> thing.node.toSource()
+            is LispData.LispList -> thing.elements.joinToString(", ", "[", "]") { stringify(it) }
+            is LispData.LispString -> thing.string
+            is LispData.LispNumber -> thing.value.toString()
+            is LispData.LispInterpretedCallable -> "<function ${thing.name ?: "<anonymous>"} ${thing.argNames} ${thing.body.toSource()}>"
+        }
+
+    }
+
     val debuglog = LispData.externalRawCall { context, callsite, stackFrame, args ->
-        println(args.joinToString(" ") { arg ->
-            when (val resolved = context.resolveValue(stackFrame, arg)) {
-                is LispData.Atom -> ":${resolved.label}"
-                is LispData.JavaExecutable -> "<native code>"
-                LispData.LispNil -> "nil"
-                is LispData.LispNode -> resolved.node.toSource()
-                is LispData.LispString -> resolved.string
-                is LispData.LispNumber -> resolved.value.toString()
-                is LispData.LispInterpretedCallable -> "<function ${resolved.name ?: "<anonymous>"} ${resolved.argNames} ${resolved.body.toSource()}>"
-            }
-        })
+        println(args.joinToString(" ") { stringify(context.resolveValue(stackFrame, it)) })
         LispData.LispNil
     }
     val add = LispData.externalCall { args, reportError ->

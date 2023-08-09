@@ -3,6 +3,10 @@
 (myfun :myfunworks)
 ((lambda (a) (debuglog a)) :atom)
 (debuglog a)
+(defun testlog (a ...) (seq
+    (debuglog "a" a)
+    (debuglog "..." ...)))
+(testlog :test :work :whatever)
 (def helloworld (pure "hello world"))
 (debuglog helloworld (helloworld))
 (debuglog "+" (+ 1.2 15))

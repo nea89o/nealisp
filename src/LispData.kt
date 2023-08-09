@@ -7,6 +7,7 @@ sealed class LispData {
     data class LispString(val string: String) : LispData()
     data class LispNumber(val value: Double) : LispData()
     data class LispNode(val node: LispAst.LispNode) : LispData()
+    class LispList(val elements: List<LispData>) : LispData()
     sealed class LispExecutable() : LispData() {
         abstract fun execute(
             executionContext: LispExecutionContext,
@@ -30,17 +31,26 @@ sealed class LispData {
             stackFrame: StackFrame,
             args: List<LispAst.LispNode>
         ): LispData {
-            if (argNames.size != args.size) {
+
+            val invocationFrame = declarationStackFrame.fork()
+            if (argNames.lastOrNull() == "...") {
+                for ((name, value) in argNames.dropLast(1).zip(args)) {
+                    invocationFrame.setValueLocal(name, executionContext.resolveValue(stackFrame, value))
+                }
+                invocationFrame.setValueLocal(
+                    "...",
+                    LispList(
+                        args.drop(argNames.size - 1).map { executionContext.resolveValue(stackFrame, it) })
+                )
+            } else if (argNames.size != args.size) {
                 return executionContext.reportError(
                     "Expected ${argNames.size} arguments, got ${args.size} instead",
                     callsite
                 )
-            }
-            val invocationFrame = declarationStackFrame.fork()
-
-            for ((name, value) in argNames.zip(args)) {
-                invocationFrame.setValueLocal(name, executionContext.resolveValue(stackFrame, value))
-            }
+            } else
+                for ((name, value) in argNames.zip(args)) {
+                    invocationFrame.setValueLocal(name, executionContext.resolveValue(stackFrame, value))
+                }
             return executionContext.executeLisp(invocationFrame, body)
         }
     }
