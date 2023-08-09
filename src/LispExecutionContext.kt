@@ -16,10 +16,12 @@ class LispExecutionContext() {
         return StackFrame(rootStackFrame)
     }
 
-    fun executeProgram(stackFrame: StackFrame, program: LispAst.Program) {
+    fun executeProgram(stackFrame: StackFrame, program: LispAst.Program): LispData? {
+        var lastValue: LispData? = null
         for (node in program.nodes) {
-            executeLisp(stackFrame, node)
+            lastValue = executeLisp(stackFrame, node)
         }
+        return lastValue
     }
 
 
