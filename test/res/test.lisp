@@ -3,6 +3,9 @@
 (myfun :myfunworks)
 ((lambda (a) (debuglog a)) :atom)
 (debuglog a)
+(defun testsomething (c) (debuglog (if c "truthy value" "falsey value")))
+(testsomething true)
+(testsomething false)
 (defun testlog (a ...) (seq
     (debuglog "a" a)
     (debuglog "..." ...)))

@@ -16,6 +16,32 @@ object CoreBindings {
         return@externalRawCall stackFrame.setValueLocal(name.label, context.resolveValue(stackFrame, value))
     }
 
+    private fun isTruthy(data: LispData): Boolean? {
+        if (data == trueValue) return true
+        if (data == falseValue) return false
+        return null
+    }
+
+    val trueValue = LispData.Atom("true")
+    val falseValue = LispData.Atom("false")
+
+    val ifFun = LispData.externalRawCall { context, callsite, stackFrame, args ->
+        if (args.size != 3) {
+            return@externalRawCall context.reportError("if requires 3 arguments", callsite)
+        }
+        val (cond, ifTrue, ifFalse) = args
+
+        val c = isTruthy(context.resolveValue(stackFrame, cond))
+        if (c == null) {
+            return@externalRawCall context.reportError("Non boolean value $c used as condition for if", cond)
+        }
+        if (c) {
+            return@externalRawCall context.resolveValue(stackFrame, ifTrue)
+        } else {
+            return@externalRawCall context.resolveValue(stackFrame, ifFalse)
+        }
+    }
+
     val pure = LispData.externalCall { args, reportError ->
         return@externalCall args.singleOrNull()?.let { value ->
             LispData.externalCall { args, reportError ->
@@ -156,6 +182,9 @@ object CoreBindings {
     }
 
     fun offerAllTo(bindings: StackFrame) {
+        bindings.setValueLocal("true", trueValue)
+        bindings.setValueLocal("false", falseValue)
+        bindings.setValueLocal("if", ifFun)
         bindings.setValueLocal("nil", nil)
         bindings.setValueLocal("def", def)
         bindings.setValueLocal("pure", pure)
