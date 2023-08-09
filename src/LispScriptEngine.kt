@@ -8,11 +8,15 @@ import javax.script.SimpleBindings
 
 class LispScriptEngine(private val factory: LispScriptEngineFactory) : AbstractScriptEngine() {
     val executionContext = LispExecutionContext()
+
+    init {
+        executionContext.setupStandardBindings()
+    }
+
     override fun eval(script: String, context: ScriptContext): LispData? {
         val fileName = context.getAttribute("scriptName") as? String ?: "script.lisp"
         val program = LispParser.parse(fileName, script)
         val root = executionContext.genBindings()
-        CoreBindings.offerAllTo(root)
         for ((name, value) in context.getBindings(ScriptContext.ENGINE_SCOPE)) {
             when (value) {
                 is String -> root.setValueLocal(name, LispData.LispString(value))

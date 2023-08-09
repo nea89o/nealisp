@@ -3,7 +3,7 @@ package moe.nea.lisp
 class LispExecutionContext() {
 
     private val errorReporter = LispErrorReporter()
-    private val rootStackFrame = StackFrame(null)
+    val rootStackFrame = StackFrame(null)
 
 
     fun reportError(name: String, position: HasLispPosition): LispData.LispNil {
@@ -14,6 +14,11 @@ class LispExecutionContext() {
 
     fun genBindings(): StackFrame {
         return StackFrame(rootStackFrame)
+    }
+
+    fun setupStandardBindings() {
+        CoreBindings.offerAllTo(rootStackFrame)
+        Builtins.loadBuiltins(this, rootStackFrame::setValueLocal)
     }
 
     fun executeProgram(stackFrame: StackFrame, program: LispAst.Program): LispData? {
