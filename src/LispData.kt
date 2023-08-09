@@ -2,17 +2,11 @@ package moe.nea.lisp
 
 sealed class LispData {
 
-    fun <T : Any> lispCastObject(lClass: LispClass<T>): LispObject<T>? {
-        if (this !is LispObject<*>) return null
-        if (this.handler != lClass) return null
-        return this as LispObject<T>
-    }
-
     object LispNil : LispData()
     data class Atom(val label: String) : LispData()
+    data class LispString(val string: String) : LispData()
+    data class LispNumber(val value: Double) : LispData()
     data class LispNode(val node: LispAst.LispNode) : LispData()
-    data class LispNumber(val number: Double) : LispData()
-    data class LispObject<T : Any>(val data: T, val handler: LispClass<T>) : LispData()
     sealed class LispExecutable() : LispData() {
         abstract fun execute(
             executionContext: LispExecutionContext,
@@ -22,9 +16,7 @@ sealed class LispData {
         ): LispData
     }
 
-
-    abstract class JavaExecutable : LispExecutable() {
-    }
+    abstract class JavaExecutable : LispExecutable()
 
     data class LispInterpretedCallable(
         val declarationStackFrame: StackFrame,
@@ -39,7 +31,10 @@ sealed class LispData {
             args: List<LispAst.LispNode>
         ): LispData {
             if (argNames.size != args.size) {
-                TODO("ERROR")
+                return executionContext.reportError(
+                    "Expected ${argNames.size} arguments, got ${args.size} instead",
+                    callsite
+                )
             }
             val invocationFrame = declarationStackFrame.fork()
 
@@ -50,21 +45,8 @@ sealed class LispData {
         }
     }
 
-    interface LispClass<T : Any> {
-        fun access(obj: T, name: String): LispData
-        fun instantiate(obj: T) = LispObject(obj, this)
-    }
-
-    object LispStringClass : LispClass<String> {
-        override fun access(obj: String, name: String): LispData {
-            return LispNil
-        }
-    }
 
     companion object {
-        fun string(value: String): LispObject<String> =
-            LispStringClass.instantiate(value)
-
         fun externalRawCall(callable: (context: LispExecutionContext, callsite: LispAst.LispNode, stackFrame: StackFrame, args: List<LispAst.LispNode>) -> LispData): LispExecutable {
             return object : JavaExecutable() {
                 override fun execute(

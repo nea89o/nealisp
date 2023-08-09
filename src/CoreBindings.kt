@@ -82,19 +82,33 @@ object CoreBindings {
         }
         lastResult ?: context.reportError("Seq cannot be invoked with 0 argumens", callsite)
     }
+
     val debuglog = LispData.externalRawCall { context, callsite, stackFrame, args ->
         println(args.joinToString(" ") { arg ->
             when (val resolved = context.resolveValue(stackFrame, arg)) {
                 is LispData.Atom -> ":${resolved.label}"
                 is LispData.JavaExecutable -> "<native code>"
                 LispData.LispNil -> "nil"
-                is LispData.LispNumber -> resolved.number.toString()
                 is LispData.LispNode -> resolved.node.toSource()
-                is LispData.LispObject<*> -> resolved.data.toString()
+                is LispData.LispString -> resolved.string
+                is LispData.LispNumber -> resolved.value.toString()
                 is LispData.LispInterpretedCallable -> "<function ${resolved.name ?: ""} ${resolved.argNames} ${resolved.body.toSource()}>"
             }
         })
         LispData.LispNil
+    }
+    val add = LispData.externalCall { args, reportError ->
+        if (args.size == 0) {
+            return@externalCall reportError("Cannot call add without at least 1 argument")
+        }
+        LispData.LispNumber(args.fold(0.0) { a, b ->
+            a + (b as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
+        })
+    }
+
+    fun offerArithmeticTo(bindings: StackFrame) {
+        bindings.setValueLocal("+", add)
     }
 
     fun offerAllTo(bindings: StackFrame) {
@@ -105,5 +119,6 @@ object CoreBindings {
         bindings.setValueLocal("defun", defun)
         bindings.setValueLocal("seq", seq)
         bindings.setValueLocal("debuglog", debuglog)
+        offerArithmeticTo(bindings)
     }
 }

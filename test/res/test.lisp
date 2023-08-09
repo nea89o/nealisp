@@ -5,7 +5,4 @@
 (debuglog a)
 (def helloworld (pure "hello world"))
 (debuglog helloworld (helloworld))
-(defun + () (seq
-    (debuglog "also multiplication")
-    (debuglog "addition")))
-(debuglog +)
+(debuglog + (+ 1.2 15))

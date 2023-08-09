@@ -49,6 +49,9 @@ class LispParser private constructor(filename: String, string: String) {
         if (paren == "\"") {
             return parseString()
         }
+        if (paren in digits) {
+            return parseNumber()
+        }
         if (paren == ":") {
             return parseAtom()
         }
@@ -56,6 +59,18 @@ class LispParser private constructor(filename: String, string: String) {
         return LispAst.Reference(racer.span(start), ident)
     }
 
+    fun parseNumber(): LispAst.NumberLiteral {
+        val start = racer.idx
+        racer.pushState()
+        val number = racer.consumeWhile { it.last().let { it in digits || it == '.' } }
+        val double = number.toDoubleOrNull()
+        if (double == null) {
+            racer.popState()
+            racer.error("Could not parse number")
+        }
+        racer.discardState()
+        return LispAst.NumberLiteral(racer.span(start), double)
+    }
 
     fun parseAtom(): LispAst.Atom {
         val start = racer.idx

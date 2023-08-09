@@ -33,6 +33,12 @@ sealed class LispAst : HasLispPosition {
         }
     }
 
+    data class NumberLiteral(override val position: LispPosition, val numberValue: Double) : LispNode() {
+        override fun toSource(): String {
+            return numberValue.toString()
+        }
+    }
+
     data class StringLiteral(override val position: LispPosition, val parsedString: String) : LispNode() {
         override fun toSource(): String {
             return "\"${parsedString.replace("\\", "\\\\").replace("\"", "\\\"")}\"" // TODO: better escaping

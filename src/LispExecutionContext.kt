@@ -31,14 +31,11 @@ class LispExecutionContext() {
 
                 val rest = node.items.drop(1)
                 return when (val resolvedValue = resolveValue(stackFrame, first)) {
-                    is LispData.Atom -> reportError("Cannot execute atom", node)
-                    LispData.LispNil -> reportError("Cannot execute nil", node)
-                    is LispData.LispNumber -> reportError("Cannot execute number", node)
-                    is LispData.LispNode -> reportError("Cannot execute node", node)
-                    is LispData.LispObject<*> -> reportError("Cannot execute object-value", node)
                     is LispData.LispExecutable -> {
                         resolvedValue.execute(this, node, stackFrame, rest)
                     }
+
+                    else -> reportError("Cannot evaluate expression of type $resolvedValue", node)
                 }
 
             }
@@ -53,8 +50,8 @@ class LispExecutionContext() {
             is LispAst.Parenthesis -> executeLisp(stackFrame, node)
             is LispAst.Reference -> stackFrame.resolveReference(node.label)
                 ?: reportError("Could not resolve variable ${node.label}", node)
-
-            is LispAst.StringLiteral -> LispData.string(node.parsedString)
+            is LispAst.NumberLiteral -> LispData.LispNumber(node.numberValue)
+            is LispAst.StringLiteral -> LispData.LispString(node.parsedString)
         }
     }
 }
