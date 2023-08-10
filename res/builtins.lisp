@@ -14,3 +14,8 @@
 (defun noop () (return nil))
 (export noop)
 
+(comment "boolean atoms")
+(def true :true)
+(def false :false)
+(export true false)
+

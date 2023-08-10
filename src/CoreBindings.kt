@@ -1,7 +1,6 @@
 package moe.nea.lisp
 
 object CoreBindings {
-    val nil = LispData.LispNil
     val def = LispData.externalRawCall { context, callsite, stackFrame, args ->
         if (args.size != 2) {
             return@externalRawCall context.reportError("Function define expects exactly two arguments", callsite)
@@ -182,10 +181,8 @@ object CoreBindings {
     }
 
     fun offerAllTo(bindings: StackFrame) {
-        bindings.setValueLocal("true", trueValue)
-        bindings.setValueLocal("false", falseValue)
         bindings.setValueLocal("if", ifFun)
-        bindings.setValueLocal("nil", nil)
+        bindings.setValueLocal("nil", LispData.LispNil)
         bindings.setValueLocal("def", def)
         bindings.setValueLocal("pure", pure)
         bindings.setValueLocal("lambda", lambda)

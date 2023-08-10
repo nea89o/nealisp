@@ -9,8 +9,9 @@ object Builtins {
     ) {
         val stackFrame = lispExecutionContext.genBindings()
         stackFrame.setValueLocal("export", LispData.externalRawCall { context, callsite, stackFrame, args ->
-            val (name) = args
-            consumer((name as LispAst.Reference).label, context.resolveValue(stackFrame, name))
+            args.forEach { name ->
+                consumer((name as LispAst.Reference).label, context.resolveValue(stackFrame, name))
+            }
             return@externalRawCall LispData.LispNil
         })
         lispExecutionContext.executeProgram(stackFrame, builtinProgram)
