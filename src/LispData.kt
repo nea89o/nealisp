@@ -17,7 +17,7 @@ sealed class LispData {
         ): LispData
     }
 
-    abstract class JavaExecutable : LispExecutable()
+    abstract class JavaExecutable(val name: String) : LispExecutable()
 
     data class LispInterpretedCallable(
         val declarationStackFrame: StackFrame,
@@ -57,8 +57,11 @@ sealed class LispData {
 
 
     companion object {
-        fun externalRawCall(callable: (context: LispExecutionContext, callsite: LispAst.LispNode, stackFrame: StackFrame, args: List<LispAst.LispNode>) -> LispData): LispExecutable {
-            return object : JavaExecutable() {
+        fun externalRawCall(
+            name: String,
+            callable: (context: LispExecutionContext, callsite: LispAst.LispNode, stackFrame: StackFrame, args: List<LispAst.LispNode>) -> LispData
+        ): LispExecutable {
+            return object : JavaExecutable(name) {
                 override fun execute(
                     executionContext: LispExecutionContext,
                     callsite: LispAst.LispNode,
@@ -70,8 +73,11 @@ sealed class LispData {
             }
         }
 
-        fun externalCall(callable: (args: List<LispData>, reportError: (String) -> LispData) -> LispData): LispExecutable {
-            return object : JavaExecutable() {
+        fun externalCall(
+            name: String,
+            callable: (args: List<LispData>, reportError: (String) -> LispData) -> LispData
+        ): LispExecutable {
+            return object : JavaExecutable(name) {
                 override fun execute(
                     executionContext: LispExecutionContext,
                     callsite: LispAst.LispNode,

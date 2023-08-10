@@ -1,8 +1,11 @@
 import moe.nea.lisp.LispExecutionContext
 import moe.nea.lisp.LispParser
+import moe.nea.lisp.TestResultFormatter
 import java.io.File
+import javax.xml.stream.XMLOutputFactory
 
 object T
+
 
 fun main() {
     val otherP = LispParser.parse(File(T::class.java.getResource("/test.lisp")!!.file))
@@ -13,5 +16,9 @@ fun main() {
         LispParser.parse(File(T::class.java.getResource("/secondary.lisp")!!.file))
     )
     val bindings = executionContext.genBindings()
-    println("The results are in: ${executionContext.runTests(otherP, bindings)}")
+    val testResults = executionContext.runTests(otherP, "Test", bindings)
+    val w = XMLOutputFactory.newFactory()
+        .createXMLStreamWriter(File("TestOutput.xml").bufferedWriter())
+    TestResultFormatter.write(w, listOf(testResults))
+    w.close()
 }

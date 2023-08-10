@@ -1,5 +1,7 @@
 package moe.nea.lisp
 
+import java.time.Instant
+
 object TestFramework {
     data class TestFailure(
         val callsite: LispAst,
@@ -14,6 +16,7 @@ object TestFramework {
 
     data class TestSuite(
         val name: String,
+        val startTime: Instant,
         var isTesting: Boolean,
         val allTests: MutableList<TestResult>,
         val testList: List<String>,
@@ -30,14 +33,14 @@ object TestFramework {
     object TestSuiteMeta : StackFrame.MetaKey<TestSuite>
     object ActiveTestMeta : StackFrame.MetaKey<ActiveTest>
 
-    val testBinding = LispData.externalRawCall { context, callsite, stackFrame, args ->
+    val testBinding = LispData.externalRawCall("ntest.test") { context, callsite, stackFrame, args ->
         runTest(context, callsite, stackFrame, args)
         return@externalRawCall LispData.LispNil
     }
 
-    val failTestBinding = LispData.externalCall { args, reportError ->
+    val failTestBinding = LispData.externalCall("ntest.fail") { args, reportError ->
         val message = CoreBindings.stringify(args.singleOrNull() ?: return@externalCall reportError("Needs a message"))
-        LispData.externalRawCall { context, callsite, stackFrame, args ->
+        LispData.externalRawCall("ntest.fail.r") { context, callsite, stackFrame, args ->
             val activeTest = stackFrame.getMeta(ActiveTestMeta)
                 ?: return@externalRawCall context.reportError("No active test", callsite)
             activeTest.currentFailures.add(TestFailure(callsite, message))
@@ -83,9 +86,8 @@ object TestFramework {
     }
 
     fun setup(stackFrame: StackFrame, name: String, testList: List<String>, isWhitelist: Boolean): TestSuite {
-        val ts = TestSuite(name, true, mutableListOf(), testList, isWhitelist)
+        val ts = TestSuite(name, Instant.now(), true, mutableListOf(), testList, isWhitelist)
         stackFrame.setMeta(TestSuiteMeta, ts)
-        ts.isTesting = false
         return ts
     }
 }

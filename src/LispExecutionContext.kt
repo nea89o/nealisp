@@ -20,6 +20,7 @@ class LispExecutionContext() {
     fun setupStandardBindings() {
         CoreBindings.offerAllTo(rootStackFrame)
         registerModule("builtins", Builtins.builtinProgram)
+        registerModule("test", Builtins.testProgram)
         modules["ntest"] = TestFramework.realizedTestModule
         importModule("builtins", rootStackFrame, object : HasLispPosition {
             override val position: LispPosition
@@ -29,12 +30,14 @@ class LispExecutionContext() {
 
     fun runTests(
         program: LispAst.Program,
+        name: String,
         stackFrame: StackFrame = genBindings(),
         testList: List<String> = emptyList(),
         isWhitelist: Boolean = false
     ): TestFramework.TestSuite {
-        val testSuite = TestFramework.setup(stackFrame, testList, isWhitelist)
+        val testSuite = TestFramework.setup(stackFrame, name, testList, isWhitelist)
         executeProgram(stackFrame, program)
+        testSuite.isTesting = false
         return testSuite
     }
 
@@ -64,7 +67,7 @@ class LispExecutionContext() {
         modules[moduleName] = map
         val module = unloadedModules.remove(moduleName) ?: error("Could not find module $moduleName")
         val stackFrame = genBindings()
-        stackFrame.setValueLocal("export", LispData.externalRawCall { context, callsite, stackFrame, args ->
+        stackFrame.setValueLocal("export", LispData.externalRawCall("export") { context, callsite, stackFrame, args ->
             args.forEach { name ->
                 if (name !is LispAst.Reference) {
                     context.reportError("Invalid export", name)

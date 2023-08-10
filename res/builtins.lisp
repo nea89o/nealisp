@@ -1,5 +1,6 @@
 (defun comment (...) ((pure nil)))
 (comment "comment is a noop function for documentation")
+(export comment)
 
 
 (comment "if! a strict version of a regular if, meaning it evaluates both the falsy and the truthy case, instead of only one.")

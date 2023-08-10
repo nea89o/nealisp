@@ -24,9 +24,10 @@
 
 (debuglog "============")
 (debuglog "Running tests")
-(import :ntest)
-(ntest.test "Funny test" (seq
+(import :test)
+(test.test "Funny test" (seq
     (debuglog "Funny test running")
-    (debuglog ((ntest.fail "Test failed")))))
+    ((test.assert false "False failed"))
+    ((test.fail "Test failed"))))
 
 

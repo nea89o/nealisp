@@ -1,7 +1,7 @@
 package moe.nea.lisp
 
 object CoreBindings {
-    val def = LispData.externalRawCall { context, callsite, stackFrame, args ->
+    val def = LispData.externalRawCall("def") { context, callsite, stackFrame, args ->
         if (args.size != 2) {
             return@externalRawCall context.reportError("Function define expects exactly two arguments", callsite)
         }
@@ -24,7 +24,7 @@ object CoreBindings {
     val trueValue = LispData.Atom("true")
     val falseValue = LispData.Atom("false")
 
-    val ifFun = LispData.externalRawCall { context, callsite, stackFrame, args ->
+    val ifFun = LispData.externalRawCall("if") { context, callsite, stackFrame, args ->
         if (args.size != 3) {
             return@externalRawCall context.reportError("if requires 3 arguments", callsite)
         }
@@ -41,9 +41,9 @@ object CoreBindings {
         }
     }
 
-    val pure = LispData.externalCall { args, reportError ->
+    val pure = LispData.externalCall("pure") { args, reportError ->
         return@externalCall args.singleOrNull()?.let { value ->
-            LispData.externalCall { args, reportError ->
+            LispData.externalCall("pure.r") { args, reportError ->
                 if (args.isNotEmpty())
                     reportError("Pure function does not expect arguments")
                 else
@@ -52,7 +52,7 @@ object CoreBindings {
         } ?: reportError("Function pure expects exactly one argument")
     }
 
-    val lambda = LispData.externalRawCall { context, callsite, stackFrame, args ->
+    val lambda = LispData.externalRawCall("lambda") { context, callsite, stackFrame, args ->
         if (args.size != 2) {
             return@externalRawCall context.reportError("Lambda needs exactly 2 arguments", callsite)
         }
@@ -73,7 +73,7 @@ object CoreBindings {
         LispData.createLambda(stackFrame, argumentNamesString, body)
     }
 
-    val defun = LispData.externalRawCall { context, callSite, stackFrame, lispAsts ->
+    val defun = LispData.externalRawCall("defun") { context, callSite, stackFrame, lispAsts ->
         if (lispAsts.size != 3) {
             return@externalRawCall context.reportError("Invalid function definition", callSite)
         }
@@ -100,7 +100,7 @@ object CoreBindings {
             LispData.createLambda(stackFrame, argumentNames, body, name.label)
         )
     }
-    val seq = LispData.externalRawCall { context, callsite, stackFrame, args ->
+    val seq = LispData.externalRawCall("seq") { context, callsite, stackFrame, args ->
         var lastResult: LispData? = null
         for (arg in args) {
             lastResult = context.executeLisp(stackFrame, arg)
@@ -111,7 +111,7 @@ object CoreBindings {
     internal fun stringify(thing: LispData): String {
         return when (thing) {
             is LispData.Atom -> ":${thing.label}"
-            is LispData.JavaExecutable -> "<native code>"
+            is LispData.JavaExecutable -> "<native function ${thing.name}>"
             LispData.LispNil -> "nil"
             is LispData.LispNode -> thing.node.toSource()
             is LispData.LispList -> thing.elements.joinToString(", ", "[", "]") { stringify(it) }
@@ -121,11 +121,15 @@ object CoreBindings {
         }
     }
 
-    val debuglog = LispData.externalRawCall { context, callsite, stackFrame, args ->
-        println(args.joinToString(" ") { stringify(context.resolveValue(stackFrame, it)) })
+    val tostring = LispData.externalCall("tostring") { args, reportError ->
+        LispData.LispString(args.joinToString(" ") { stringify(it) })
+    }
+
+    val debuglog = LispData.externalCall("debuglog") { args, reportError ->
+        println(args.joinToString(" ") { stringify(it) })
         LispData.LispNil
     }
-    val add = LispData.externalCall { args, reportError ->
+    val add = LispData.externalCall("add") { args, reportError ->
         if (args.size == 0) {
             return@externalCall reportError("Cannot call add without at least 1 argument")
         }
@@ -134,7 +138,7 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
-    val sub = LispData.externalCall { args, reportError ->
+    val sub = LispData.externalCall("sub") { args, reportError ->
         if (args.size == 0) {
             return@externalCall reportError("Cannot call sub without at least 1 argument")
         }
@@ -148,7 +152,7 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
-    val mul = LispData.externalCall { args, reportError ->
+    val mul = LispData.externalCall("mul") { args, reportError ->
         if (args.size == 0) {
             return@externalCall reportError("Cannot call mul without at least 1 argument")
         }
@@ -157,7 +161,7 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
-    val div = LispData.externalCall { args, reportError ->
+    val div = LispData.externalCall("div") { args, reportError ->
         if (args.size == 0) {
             return@externalCall reportError("Cannot call div without at least 1 argument")
         }
@@ -171,7 +175,7 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
-    val import = LispData.externalRawCall { context, callsite, stackFrame, args ->
+    val import = LispData.externalRawCall("import") { context, callsite, stackFrame, args ->
         if (args.size != 1) {
             return@externalRawCall context.reportError("import needs at least one argument", callsite)
         }
@@ -196,6 +200,7 @@ object CoreBindings {
         bindings.setValueLocal("if", ifFun)
         bindings.setValueLocal("nil", LispData.LispNil)
         bindings.setValueLocal("def", def)
+        bindings.setValueLocal("tostring", tostring)
         bindings.setValueLocal("pure", pure)
         bindings.setValueLocal("lambda", lambda)
         bindings.setValueLocal("defun", defun)
