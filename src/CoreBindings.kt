@@ -147,9 +147,8 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $it, expected number")
                     ).value
         }
-        LispData.LispNumber(args.drop(1).fold(c.first()) { a, b ->
-            a - (b as? LispData.LispNumber
-                ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
+        LispData.LispNumber(c.drop(1).fold(c.first()) { a, b ->
+            a - b
         })
     }
     val mul = LispData.externalCall("mul") { args, reportError ->
@@ -161,6 +160,12 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
+    val eq = LispData.externalCall("eq") { args, reportError ->
+        if (args.size == 0) {
+            return@externalCall reportError("Cannot call eq without at least 1 argument")
+        }
+        LispData.boolean(!args.zipWithNext().any { it.first != it.second })
+    }
     val div = LispData.externalCall("div") { args, reportError ->
         if (args.size == 0) {
             return@externalCall reportError("Cannot call div without at least 1 argument")
@@ -170,10 +175,20 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $it, expected number")
                     ).value
         }
-        LispData.LispNumber(args.drop(1).fold(c.first()) { a, b ->
-            a / (b as? LispData.LispNumber
-                ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
+        LispData.LispNumber(c.drop(1).fold(c.first()) { a, b ->
+            a / b
         })
+    }
+    val less = LispData.externalCall("less") { args, reportError ->
+        if (args.size != 2) {
+            return@externalCall reportError("Cannot call less without exactly 2 arguments")
+        }
+        val (left, right) = args.map {
+            (it as? LispData.LispNumber
+                ?: return@externalCall reportError("Unexpected argument $it, expected number")
+                    ).value
+        }
+        LispData.boolean(left < right)
     }
     val import = LispData.externalRawCall("import") { context, callsite, stackFrame, args ->
         if (args.size != 1) {
@@ -194,6 +209,8 @@ object CoreBindings {
         bindings.setValueLocal("/", div)
         bindings.setValueLocal("*", mul)
         bindings.setValueLocal("-", sub)
+        bindings.setValueLocal("lt", less)
+        bindings.setValueLocal("=", eq)
     }
 
     fun offerAllTo(bindings: StackFrame) {

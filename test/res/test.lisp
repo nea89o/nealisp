@@ -28,6 +28,14 @@
 (test.test "Funny test" (seq
     (debuglog "Funny test running")
     ((test.assert false "False failed"))
+    ((test.assert-eq "funny" "unfunny"))
     ((test.fail "Test failed"))))
 
-
+(test.test "Test equality" (seq
+    ((test.assert-eq false false))
+    ((test.assert-eq (not false) true))
+    ((test.assert-eq (not true) false))
+    ((test.assert-eq (& true true) true))
+    ((test.assert-eq (& true false) false))
+    ((test.assert-eq (& false true) false))
+    ((test.assert-eq (& false false) false))))

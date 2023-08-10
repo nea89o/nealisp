@@ -20,3 +20,13 @@
 (def false :false)
 (export true false)
 
+(comment "boolean operations. all of those are strict")
+(defun | (l r) (if l true r))
+(defun & (l r) (if l r false))
+(defun not (v) (if v false true))
+(defun ^ (l r) (if l (not r) r))
+(export | & not ^)
+
+(comment "comparisons")
+(defun gt (l r) (lt r l))
+(export gt)

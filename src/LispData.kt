@@ -99,5 +99,13 @@ sealed class LispData {
         ): LispExecutable {
             return LispInterpretedCallable(declarationStackFrame, args, body, nameHint)
         }
+
+        fun boolean(b: Boolean): Atom {
+            return if (b) {
+                CoreBindings.trueValue
+            } else {
+                CoreBindings.falseValue
+            }
+        }
     }
 }

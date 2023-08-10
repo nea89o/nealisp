@@ -14,3 +14,9 @@
 (defun test.assert (cond message) (if cond noop (ntest.fail message)))
 (export test.assert)
 
+(comment "Assert that two arguments are equal. Returns a closure")
+(defun test.assert-eq (actual expected)
+  (test.assert
+      (= actual expected)
+      (tostring "Expected" expected "got" actual)))
+(export test.assert-eq)
