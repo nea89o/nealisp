@@ -108,7 +108,7 @@ object CoreBindings {
         lastResult ?: context.reportError("Seq cannot be invoked with 0 argumens", callsite)
     }
 
-    private fun stringify(thing: LispData): String {
+    internal fun stringify(thing: LispData): String {
         return when (thing) {
             is LispData.Atom -> ":${thing.label}"
             is LispData.JavaExecutable -> "<native code>"
@@ -119,7 +119,6 @@ object CoreBindings {
             is LispData.LispNumber -> thing.value.toString()
             is LispData.LispInterpretedCallable -> "<function ${thing.name ?: "<anonymous>"} ${thing.argNames} ${thing.body.toSource()}>"
         }
-
     }
 
     val debuglog = LispData.externalRawCall { context, callsite, stackFrame, args ->

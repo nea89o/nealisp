@@ -8,7 +8,10 @@ fun main() {
     val otherP = LispParser.parse(File(T::class.java.getResource("/test.lisp")!!.file))
     val executionContext = LispExecutionContext()
     executionContext.setupStandardBindings()
-    executionContext.registerModule("secondary", LispParser.parse(File(T::class.java.getResource("/secondary.lisp")!!.file)))
+    executionContext.registerModule(
+        "secondary",
+        LispParser.parse(File(T::class.java.getResource("/secondary.lisp")!!.file))
+    )
     val bindings = executionContext.genBindings()
-    executionContext.executeProgram(bindings, otherP)
+    println("The results are in: ${executionContext.runTests(otherP, bindings)}")
 }

@@ -21,3 +21,12 @@
 (debuglog "This should fail" sc)
 (import :secondary)
 (debuglog "This should work" sc)
+
+(debuglog "============")
+(debuglog "Running tests")
+(import :ntest)
+(ntest.test "Funny test" (seq
+    (debuglog "Funny test running")
+    (debuglog ((ntest.fail "Test failed")))))
+
+

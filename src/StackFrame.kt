@@ -9,7 +9,7 @@ class StackFrame(val parent: StackFrame?) {
     private val meta: MutableMap<MetaKey<*>, Any> = mutableMapOf()
 
     fun <T : Any> getMeta(key: MetaKey<T>): T? {
-        return meta[key] as? T
+        return meta[key]?.let { it as T } ?: parent?.meta?.get(key)?.let { it as T }
     }
 
     fun <T : Any> setMeta(key: MetaKey<T>, value: T) {

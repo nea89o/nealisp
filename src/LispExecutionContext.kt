@@ -20,12 +20,24 @@ class LispExecutionContext() {
     fun setupStandardBindings() {
         CoreBindings.offerAllTo(rootStackFrame)
         registerModule("builtins", Builtins.builtinProgram)
+        modules["ntest"] = TestFramework.realizedTestModule
         importModule("builtins", rootStackFrame, object : HasLispPosition {
             override val position: LispPosition
                 get() = error("Builtin import failed")
-
         })
     }
+
+    fun runTests(
+        program: LispAst.Program,
+        stackFrame: StackFrame = genBindings(),
+        testList: List<String> = emptyList(),
+        isWhitelist: Boolean = false
+    ): TestFramework.TestSuite {
+        val testSuite = TestFramework.setup(stackFrame, testList, isWhitelist)
+        executeProgram(stackFrame, program)
+        return testSuite
+    }
+
 
     fun registerModule(moduleName: String, program: LispAst.Program) {
         if (moduleName in unloadedModules || moduleName in modules) {
