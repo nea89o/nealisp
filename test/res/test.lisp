@@ -17,3 +17,7 @@
 (testsomething true)
 (testsomething false)
 (noop)
+(debuglog "============")
+(debuglog "This should fail" sc)
+(import :secondary)
+(debuglog "This should work" sc)

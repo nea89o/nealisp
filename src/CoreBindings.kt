@@ -172,6 +172,19 @@ object CoreBindings {
                 ?: return@externalCall reportError("Unexpected argument $b, expected number")).value
         })
     }
+    val import = LispData.externalRawCall { context, callsite, stackFrame, args ->
+        if (args.size != 1) {
+            return@externalRawCall context.reportError("import needs at least one argument", callsite)
+        }
+        // TODO: aliased / namespaced imports
+        val moduleName = when (val moduleObject = context.resolveValue(stackFrame, args[0])) {
+            is LispData.Atom -> moduleObject.label
+            is LispData.LispString -> moduleObject.string
+            else -> return@externalRawCall context.reportError("import needs a string or atom as argument", callsite)
+        }
+        context.importModule(moduleName, stackFrame, callsite)
+        return@externalRawCall LispData.LispNil
+    }
 
     fun offerArithmeticTo(bindings: StackFrame) {
         bindings.setValueLocal("+", add)
@@ -188,6 +201,7 @@ object CoreBindings {
         bindings.setValueLocal("lambda", lambda)
         bindings.setValueLocal("defun", defun)
         bindings.setValueLocal("seq", seq)
+        bindings.setValueLocal("import", import)
         bindings.setValueLocal("debuglog", debuglog)
         offerArithmeticTo(bindings)
     }

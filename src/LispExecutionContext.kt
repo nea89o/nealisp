@@ -4,7 +4,8 @@ class LispExecutionContext() {
 
     private val errorReporter = LispErrorReporter()
     val rootStackFrame = StackFrame(null)
-
+    val unloadedModules = mutableMapOf<String, LispAst.Program>()
+    val modules = mutableMapOf<String, Map<String, LispData>>()
 
     fun reportError(name: String, position: HasLispPosition): LispData.LispNil {
         println("Error: $name ${position.position}")
@@ -18,7 +19,51 @@ class LispExecutionContext() {
 
     fun setupStandardBindings() {
         CoreBindings.offerAllTo(rootStackFrame)
-        Builtins.loadBuiltins(this, rootStackFrame::setValueLocal)
+        registerModule("builtins", Builtins.builtinProgram)
+        importModule("builtins", rootStackFrame, object : HasLispPosition {
+            override val position: LispPosition
+                get() = error("Builtin import failed")
+
+        })
+    }
+
+    fun registerModule(moduleName: String, program: LispAst.Program) {
+        if (moduleName in unloadedModules || moduleName in modules) {
+            error("Cannot register already registered module $moduleName")
+        }
+        unloadedModules[moduleName] = program
+    }
+
+    fun importModule(moduleName: String, into: StackFrame, position: HasLispPosition) {
+        var exports = modules[moduleName]
+        if (exports == null) {
+            val module = unloadedModules[moduleName]
+            if (module == null) {
+                reportError("Could not find module $moduleName", position)
+                return
+            }
+            exports = realizeModule(moduleName)
+        }
+        into.variables.putAll(exports)
+    }
+
+    private fun realizeModule(moduleName: String): Map<String, LispData> {
+        val map = mutableMapOf<String, LispData>()
+        modules[moduleName] = map
+        val module = unloadedModules.remove(moduleName) ?: error("Could not find module $moduleName")
+        val stackFrame = genBindings()
+        stackFrame.setValueLocal("export", LispData.externalRawCall { context, callsite, stackFrame, args ->
+            args.forEach { name ->
+                if (name !is LispAst.Reference) {
+                    context.reportError("Invalid export", name)
+                    return@forEach
+                }
+                map[name.label] = context.resolveValue(stackFrame, name)
+            }
+            return@externalRawCall LispData.LispNil
+        })
+        executeProgram(stackFrame, module)
+        return map
     }
 
     fun executeProgram(stackFrame: StackFrame, program: LispAst.Program): LispData? {
@@ -57,6 +102,7 @@ class LispExecutionContext() {
             is LispAst.Parenthesis -> executeLisp(stackFrame, node)
             is LispAst.Reference -> stackFrame.resolveReference(node.label)
                 ?: reportError("Could not resolve variable ${node.label}", node)
+
             is LispAst.NumberLiteral -> LispData.LispNumber(node.numberValue)
             is LispAst.StringLiteral -> LispData.LispString(node.parsedString)
         }
