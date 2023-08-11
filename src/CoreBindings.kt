@@ -3,14 +3,14 @@ package moe.nea.lisp
 object CoreBindings {
     val def = LispData.externalRawCall("def") { context, callsite, stackFrame, args ->
         if (args.size != 2) {
-            return@externalRawCall context.reportError("Function define expects exactly two arguments", callsite)
+            return@externalRawCall stackFrame.reportError("Function define expects exactly two arguments", callsite)
         }
         val (name, value) = args
         if (name !is LispAst.Reference) {
-            return@externalRawCall context.reportError("Define expects a name as first argument", name)
+            return@externalRawCall stackFrame.reportError("Define expects a name as first argument", name)
         }
         if (name.label in stackFrame.variables) {
-            return@externalRawCall context.reportError("Cannot redefine value in local context", name)
+            return@externalRawCall stackFrame.reportError("Cannot redefine value in local context", name)
         }
         return@externalRawCall stackFrame.setValueLocal(name.label, context.resolveValue(stackFrame, value))
     }
@@ -26,13 +26,13 @@ object CoreBindings {
 
     val ifFun = LispData.externalRawCall("if") { context, callsite, stackFrame, args ->
         if (args.size != 3) {
-            return@externalRawCall context.reportError("if requires 3 arguments", callsite)
+            return@externalRawCall stackFrame.reportError("if requires 3 arguments", callsite)
         }
         val (cond, ifTrue, ifFalse) = args
 
         val c = isTruthy(context.resolveValue(stackFrame, cond))
         if (c == null) {
-            return@externalRawCall context.reportError("Non boolean value $c used as condition for if", cond)
+            return@externalRawCall stackFrame.reportError("Non boolean value $c used as condition for if", cond)
         }
         if (c) {
             return@externalRawCall context.resolveValue(stackFrame, ifTrue)
@@ -54,46 +54,46 @@ object CoreBindings {
 
     val lambda = LispData.externalRawCall("lambda") { context, callsite, stackFrame, args ->
         if (args.size != 2) {
-            return@externalRawCall context.reportError("Lambda needs exactly 2 arguments", callsite)
+            return@externalRawCall stackFrame.reportError("Lambda needs exactly 2 arguments", callsite)
         }
         val (argumentNames, body) = args
         if (argumentNames !is LispAst.Parenthesis) {
-            return@externalRawCall context.reportError("Lambda has invalid argument declaration", argumentNames)
+            return@externalRawCall stackFrame.reportError("Lambda has invalid argument declaration", argumentNames)
         }
         val argumentNamesString = argumentNames.items.map {
             val ref = it as? LispAst.Reference
             if (ref == null) {
-                return@externalRawCall context.reportError("Lambda has invalid argument declaration", it)
+                return@externalRawCall stackFrame.reportError("Lambda has invalid argument declaration", it)
             }
             ref.label
         }
         if (body !is LispAst.Parenthesis) {
-            return@externalRawCall context.reportError("Lambda has invalid body declaration", body)
+            return@externalRawCall stackFrame.reportError("Lambda has invalid body declaration", body)
         }
         LispData.createLambda(stackFrame, argumentNamesString, body)
     }
 
     val defun = LispData.externalRawCall("defun") { context, callSite, stackFrame, lispAsts ->
         if (lispAsts.size != 3) {
-            return@externalRawCall context.reportError("Invalid function definition", callSite)
+            return@externalRawCall stackFrame.reportError("Invalid function definition", callSite)
         }
         val (name, args, body) = lispAsts
         if (name !is LispAst.Reference) {
-            return@externalRawCall context.reportError("Invalid function definition name", name)
+            return@externalRawCall stackFrame.reportError("Invalid function definition name", name)
         }
         if (name.label in stackFrame.variables) {
-            return@externalRawCall context.reportError("Cannot redefine function in local context", name)
+            return@externalRawCall stackFrame.reportError("Cannot redefine function in local context", name)
         }
         if (args !is LispAst.Parenthesis) {
-            return@externalRawCall context.reportError("Invalid function definition arguments", args)
+            return@externalRawCall stackFrame.reportError("Invalid function definition arguments", args)
         }
         val argumentNames = args.items.map {
             val ref = it as? LispAst.Reference
-                ?: return@externalRawCall context.reportError("Invalid function definition argument name", it)
+                ?: return@externalRawCall stackFrame.reportError("Invalid function definition argument name", it)
             ref.label
         }
         if (body !is LispAst.Parenthesis) {
-            return@externalRawCall context.reportError("Invalid function definition body", body)
+            return@externalRawCall stackFrame.reportError("Invalid function definition body", body)
         }
         return@externalRawCall stackFrame.setValueLocal(
             name.label,
@@ -105,7 +105,7 @@ object CoreBindings {
         for (arg in args) {
             lastResult = context.executeLisp(stackFrame, arg)
         }
-        lastResult ?: context.reportError("Seq cannot be invoked with 0 argumens", callsite)
+        lastResult ?: stackFrame.reportError("Seq cannot be invoked with 0 argumens", callsite)
     }
 
     internal fun stringify(thing: LispData): String {
@@ -125,8 +125,10 @@ object CoreBindings {
         LispData.LispString(args.joinToString(" ") { stringify(it) })
     }
 
-    val debuglog = LispData.externalCall("debuglog") { args, reportError ->
-        println(args.joinToString(" ") { stringify(it) })
+    val debuglog = LispData.externalRawCall("debuglog") { context, callsite, stackFrame, args ->
+        OutputCapture.print(
+            stackFrame,
+            args.joinToString(" ", postfix = "\n") { stringify(context.resolveValue(stackFrame, it)) })
         LispData.LispNil
     }
     val add = LispData.externalCall("add") { args, reportError ->
@@ -192,13 +194,13 @@ object CoreBindings {
     }
     val import = LispData.externalRawCall("import") { context, callsite, stackFrame, args ->
         if (args.size != 1) {
-            return@externalRawCall context.reportError("import needs at least one argument", callsite)
+            return@externalRawCall stackFrame.reportError("import needs at least one argument", callsite)
         }
         // TODO: aliased / namespaced imports
         val moduleName = when (val moduleObject = context.resolveValue(stackFrame, args[0])) {
             is LispData.Atom -> moduleObject.label
             is LispData.LispString -> moduleObject.string
-            else -> return@externalRawCall context.reportError("import needs a string or atom as argument", callsite)
+            else -> return@externalRawCall stackFrame.reportError("import needs a string or atom as argument", callsite)
         }
         context.importModule(moduleName, stackFrame, callsite)
         return@externalRawCall LispData.LispNil

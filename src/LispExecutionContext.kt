@@ -7,12 +7,6 @@ class LispExecutionContext() {
     val unloadedModules = mutableMapOf<String, LispAst.Program>()
     val modules = mutableMapOf<String, Map<String, LispData>>()
 
-    fun reportError(name: String, position: HasLispPosition): LispData.LispNil {
-        println("Error: $name ${position.position}")
-        return LispData.LispNil
-    }
-
-
     fun genBindings(): StackFrame {
         return StackFrame(rootStackFrame)
     }
@@ -36,8 +30,10 @@ class LispExecutionContext() {
         isWhitelist: Boolean = false
     ): TestFramework.TestSuite {
         val testSuite = TestFramework.setup(stackFrame, name, testList, isWhitelist)
+        val output = OutputCapture.captureOutput(stackFrame)
         executeProgram(stackFrame, program)
         testSuite.isTesting = false
+        testSuite.otherOutput = output.asString
         return testSuite
     }
 
@@ -54,7 +50,7 @@ class LispExecutionContext() {
         if (exports == null) {
             val module = unloadedModules[moduleName]
             if (module == null) {
-                reportError("Could not find module $moduleName", position)
+                into.reportError("Could not find module $moduleName", position)
                 return
             }
             exports = realizeModule(moduleName)
@@ -70,7 +66,7 @@ class LispExecutionContext() {
         stackFrame.setValueLocal("export", LispData.externalRawCall("export") { context, callsite, stackFrame, args ->
             args.forEach { name ->
                 if (name !is LispAst.Reference) {
-                    context.reportError("Invalid export", name)
+                    stackFrame.reportError("Invalid export", name)
                     return@forEach
                 }
                 map[name.label] = context.resolveValue(stackFrame, name)
@@ -94,7 +90,7 @@ class LispExecutionContext() {
         when (node) {
             is LispAst.Parenthesis -> {
                 val first = node.items.firstOrNull()
-                    ?: return reportError("Cannot execute empty parenthesis ()", node)
+                    ?: return stackFrame.reportError("Cannot execute empty parenthesis ()", node)
 
                 val rest = node.items.drop(1)
                 return when (val resolvedValue = resolveValue(stackFrame, first)) {
@@ -102,12 +98,12 @@ class LispExecutionContext() {
                         resolvedValue.execute(this, node, stackFrame, rest)
                     }
 
-                    else -> reportError("Cannot evaluate expression of type $resolvedValue", node)
+                    else -> stackFrame.reportError("Cannot evaluate expression of type $resolvedValue", node)
                 }
 
             }
 
-            else -> return reportError("Expected invocation", node)
+            else -> return stackFrame.reportError("Expected invocation", node)
         }
     }
 
@@ -116,7 +112,7 @@ class LispExecutionContext() {
             is LispAst.Atom -> LispData.Atom(node.label)
             is LispAst.Parenthesis -> executeLisp(stackFrame, node)
             is LispAst.Reference -> stackFrame.resolveReference(node.label)
-                ?: reportError("Could not resolve variable ${node.label}", node)
+                ?: stackFrame.reportError("Could not resolve variable ${node.label}", node)
 
             is LispAst.NumberLiteral -> LispData.LispNumber(node.numberValue)
             is LispAst.StringLiteral -> LispData.LispString(node.parsedString)

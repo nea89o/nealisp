@@ -13,3 +13,32 @@ publishing {
         }
     }
 }
+
+val testReportFile = layout.buildDirectory.file("test-results/nealisp/results.xml")
+
+tasks.create("testLisps", JavaExec::class) {
+    javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
+    classpath(sourceSets.test.get().runtimeClasspath)
+    mainClass.set("TestMain")
+    dependsOn(tasks.testClasses)
+    dependsOn(tasks.processTestResources)
+    outputs.file(testReportFile)
+    systemProperty("test.report", testReportFile.map { it.asFile.absolutePath }.get())
+    systemProperty("test.suites", "test")
+    systemProperty("test.imports", "secondary")
+    group = "verification"
+}
+
+
+tasks.create("testLispsHtml", Exec::class) {
+    dependsOn("testLisps")
+    executable("xunit-viewer")
+    inputs.file(testReportFile)
+    val testReportHtmlFile = layout.buildDirectory.file("reports/nealisp/tests/index.html")
+    outputs.file(testReportHtmlFile)
+    args(
+        "-r", testReportFile.map { it.asFile.absolutePath }.get(),
+        "-o", testReportHtmlFile.map { it.asFile.absolutePath }.get()
+    )
+    group = "verification"
+}

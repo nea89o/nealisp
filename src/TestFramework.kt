@@ -12,6 +12,7 @@ object TestFramework {
         val name: String,
         val failures: List<TestFailure>,
         val wasSkipped: Boolean,
+        val stdout: String,
     )
 
     data class TestSuite(
@@ -21,6 +22,7 @@ object TestFramework {
         val allTests: MutableList<TestResult>,
         val testList: List<String>,
         val isWhitelist: Boolean,
+        var otherOutput: String = "",
     )
 
     data class ActiveTest(
@@ -42,7 +44,7 @@ object TestFramework {
         val message = CoreBindings.stringify(args.singleOrNull() ?: return@externalCall reportError("Needs a message"))
         LispData.externalRawCall("ntest.fail.r") { context, callsite, stackFrame, args ->
             val activeTest = stackFrame.getMeta(ActiveTestMeta)
-                ?: return@externalRawCall context.reportError("No active test", callsite)
+                ?: return@externalRawCall stackFrame.reportError("No active test", callsite)
             activeTest.currentFailures.add(TestFailure(callsite, message))
             return@externalRawCall LispData.LispNil
         }
@@ -62,7 +64,7 @@ object TestFramework {
         val meta = stackFrame.getMeta(TestSuiteMeta) ?: return
         if (!meta.isTesting) return
         if (args.size != 2) {
-            context.reportError("Test case needs to be defined by a name and an executable", callsite)
+            stackFrame.reportError("Test case needs to be defined by a name and an executable", callsite)
             return
         }
         val (name, prog) = args
@@ -70,19 +72,20 @@ object TestFramework {
             is LispData.Atom -> n.label
             is LispData.LispString -> n.string
             else -> {
-                context.reportError("Test case needs an atom or string as name", name)
+                stackFrame.reportError("Test case needs an atom or string as name", name)
                 return
             }
         }
         if (testName in meta.testList != meta.isWhitelist) {
-            meta.allTests.add(TestResult(testName, listOf(), true))
+            meta.allTests.add(TestResult(testName, listOf(), true, ""))
             return
         }
         val child = stackFrame.fork()
         val test = ActiveTest(testName, mutableListOf(), false, meta)
+        val output = OutputCapture.captureOutput(child)
         child.setMeta(ActiveTestMeta, test)
         context.resolveValue(child, prog)
-        meta.allTests.add(TestResult(test.testName, test.currentFailures, false))
+        meta.allTests.add(TestResult(test.testName, test.currentFailures, false, output.asString))
     }
 
     fun setup(stackFrame: StackFrame, name: String, testList: List<String>, isWhitelist: Boolean): TestSuite {

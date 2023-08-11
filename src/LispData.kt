@@ -43,7 +43,7 @@ sealed class LispData {
                         args.drop(argNames.size - 1).map { executionContext.resolveValue(stackFrame, it) })
                 )
             } else if (argNames.size != args.size) {
-                return executionContext.reportError(
+                return stackFrame.reportError(
                     "Expected ${argNames.size} arguments, got ${args.size} instead",
                     callsite
                 )
@@ -85,7 +85,7 @@ sealed class LispData {
                     args: List<LispAst.LispNode>
                 ): LispData {
                     val mappedArgs = args.map { executionContext.resolveValue(stackFrame, it) }
-                    return callable.invoke(mappedArgs) { executionContext.reportError(it, callsite) }
+                    return callable.invoke(mappedArgs) { stackFrame.reportError(it, callsite) }
                 }
             }
         }

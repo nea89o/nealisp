@@ -30,6 +30,9 @@ class TestResultFormatter(private val writer: XMLStreamWriter) {
         testSuite.allTests.forEach {
             writeTestCase(it)
         }
+        writer.writeStartElement("system-out")
+        writer.writeCData(testSuite.otherOutput)
+        writer.writeEndElement()
 
         writer.writeEndElement()
     }
@@ -45,6 +48,9 @@ class TestResultFormatter(private val writer: XMLStreamWriter) {
         for (fail in test.failures) {
             writeFailure(fail)
         }
+        writer.writeStartElement("system-out")
+        writer.writeCData(test.stdout)
+        writer.writeEndElement()
 
         writer.writeEndElement()
     }

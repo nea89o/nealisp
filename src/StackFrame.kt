@@ -12,6 +12,11 @@ class StackFrame(val parent: StackFrame?) {
         return meta[key]?.let { it as T } ?: parent?.meta?.get(key)?.let { it as T }
     }
 
+    fun reportError(name: String, position: HasLispPosition): LispData.LispNil {
+        OutputCapture.print(this, "Error: $name ${position.position}\n")
+        return LispData.LispNil
+    }
+
     fun <T : Any> setMeta(key: MetaKey<T>, value: T) {
         meta[key] = value
     }
