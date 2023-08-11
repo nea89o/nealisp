@@ -206,26 +206,43 @@ object CoreBindings {
         return@externalRawCall LispData.LispNil
     }
 
+    val reflect = LispData.externalCall("reflect.type") { args, reportError ->
+        if (args.size != 1) {
+            return@externalCall reportError("reflect.type can only return the type for one argument")
+        }
+
+        return@externalCall when (args[0]) {
+            is LispData.Atom -> LispData.Atom("atom")
+            is LispData.LispExecutable -> LispData.Atom("callable")
+            is LispData.LispList -> LispData.Atom("list")
+            LispData.LispNil -> LispData.Atom("nil")
+            is LispData.LispNode -> LispData.Atom("ast")
+            is LispData.LispNumber -> LispData.Atom("number")
+            is LispData.LispString -> LispData.Atom("string")
+        }
+    }
+
     fun offerArithmeticTo(bindings: StackFrame) {
-        bindings.setValueLocal("+", add)
-        bindings.setValueLocal("/", div)
-        bindings.setValueLocal("*", mul)
-        bindings.setValueLocal("-", sub)
-        bindings.setValueLocal("lt", less)
-        bindings.setValueLocal("=", eq)
+        bindings.setValueLocal("core.arith.add", add)
+        bindings.setValueLocal("core.arith.div", div)
+        bindings.setValueLocal("core.arith.mul", mul)
+        bindings.setValueLocal("core.arith.sub", sub)
+        bindings.setValueLocal("core.arith.less", less)
+        bindings.setValueLocal("core.arith.eq", eq)
     }
 
     fun offerAllTo(bindings: StackFrame) {
-        bindings.setValueLocal("if", ifFun)
-        bindings.setValueLocal("nil", LispData.LispNil)
-        bindings.setValueLocal("def", def)
-        bindings.setValueLocal("tostring", tostring)
-        bindings.setValueLocal("pure", pure)
-        bindings.setValueLocal("lambda", lambda)
-        bindings.setValueLocal("defun", defun)
-        bindings.setValueLocal("seq", seq)
-        bindings.setValueLocal("import", import)
-        bindings.setValueLocal("debuglog", debuglog)
+        bindings.setValueLocal("core.if", ifFun)
+        bindings.setValueLocal("core.nil", LispData.LispNil)
+        bindings.setValueLocal("core.def", def)
+        bindings.setValueLocal("core.tostring", tostring)
+        bindings.setValueLocal("core.pure", pure)
+        bindings.setValueLocal("core.lambda", lambda)
+        bindings.setValueLocal("core.defun", defun)
+        bindings.setValueLocal("core.seq", seq)
+        bindings.setValueLocal("core.import", import)
+        bindings.setValueLocal("core.reflect.type", reflect)
+        bindings.setValueLocal("core.debuglog", debuglog)
         offerArithmeticTo(bindings)
     }
 }

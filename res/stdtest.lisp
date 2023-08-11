@@ -18,5 +18,5 @@
 (defun test.assert-eq (actual expected)
   (test.assert
       (= actual expected)
-      (tostring "Expected" expected "got" actual)))
+      (stringify "Expected" expected "got" actual)))
 (export test.assert-eq)
