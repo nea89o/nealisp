@@ -19,3 +19,14 @@
     ((test.assert-eq (| true false) true))
     ((test.assert-eq (| false true) true))
     ((test.assert-eq (| false false) false))))
+
+(test.test "Hashes" (seq
+    (def funnyhash (hash.new :test1 1 :test2 2))
+    ((test.assert-eq
+        (hash.merge funnyhash (hash.new :test1 2))
+        (hash.new :test1 2 :test2 2)))
+    ((test.assert-eq funnyhash (hash.new :test1 1 :test2 2)))
+    ((test.assert-eq (hash.get funnyhash :test1) 1))
+    ((test.assert-eq (hash.get funnyhash :tesst3) nil))
+    ))
+

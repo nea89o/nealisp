@@ -7,6 +7,7 @@ sealed class LispData {
     data class LispString(val string: String) : LispData()
     data class LispNumber(val value: Double) : LispData()
     data class LispNode(val node: LispAst.LispNode) : LispData()
+    data class LispHash(val map: Map<String, LispData>) : LispData()
     class LispList(val elements: List<LispData>) : LispData()
     sealed class LispExecutable() : LispData() {
         abstract fun execute(

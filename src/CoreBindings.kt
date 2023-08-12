@@ -116,6 +116,7 @@ object CoreBindings {
             is LispData.LispNode -> thing.node.toSource()
             is LispData.LispList -> thing.elements.joinToString(", ", "[", "]") { stringify(it) }
             is LispData.LispString -> thing.string
+            is LispData.LispHash -> thing.map.asIterable().joinToString(", ", "{", "}") { it.key + ": " + it.value }
             is LispData.LispNumber -> thing.value.toString()
             is LispData.LispInterpretedCallable -> "<function ${thing.name ?: "<anonymous>"} ${thing.argNames} ${thing.body.toSource()}>"
         }
@@ -192,16 +193,22 @@ object CoreBindings {
         }
         LispData.boolean(left < right)
     }
+
+    private fun atomOrStringToString(thing: LispData): String? {
+        return when (thing) {
+            is LispData.Atom -> thing.label
+            is LispData.LispString -> thing.string
+            else -> null
+        }
+    }
+
     val import = LispData.externalRawCall("import") { context, callsite, stackFrame, args ->
         if (args.size != 1) {
             return@externalRawCall stackFrame.reportError("import needs at least one argument", callsite)
         }
         // TODO: aliased / namespaced imports
-        val moduleName = when (val moduleObject = context.resolveValue(stackFrame, args[0])) {
-            is LispData.Atom -> moduleObject.label
-            is LispData.LispString -> moduleObject.string
-            else -> return@externalRawCall stackFrame.reportError("import needs a string or atom as argument", callsite)
-        }
+        val moduleName = atomOrStringToString(context.resolveValue(stackFrame, args[0]))
+            ?: return@externalRawCall stackFrame.reportError("import needs a string or atom as argument", callsite)
         context.importModule(moduleName, stackFrame, callsite)
         return@externalRawCall LispData.LispNil
     }
@@ -216,6 +223,7 @@ object CoreBindings {
             is LispData.LispExecutable -> LispData.Atom("callable")
             is LispData.LispList -> LispData.Atom("list")
             LispData.LispNil -> LispData.Atom("nil")
+            is LispData.LispHash -> LispData.Atom("hash")
             is LispData.LispNode -> LispData.Atom("ast")
             is LispData.LispNumber -> LispData.Atom("number")
             is LispData.LispString -> LispData.Atom("string")
@@ -231,6 +239,42 @@ object CoreBindings {
         bindings.setValueLocal("core.arith.eq", eq)
     }
 
+    fun offerHashesTo(bindings: StackFrame) {
+        bindings.setValueLocal("core.newhash", LispData.externalCall("newhash") { args, reportError ->
+            if (args.size % 2 != 0) {
+                return@externalCall reportError("Hash creation needs to have an even number of arguments")
+            }
+
+            LispData.LispHash(
+                args.chunked(2).associate { (a, b) ->
+                    (atomOrStringToString(a)
+                        ?: return@externalCall reportError("Hash key needs to be string or atom")) to b
+                })
+        })
+        bindings.setValueLocal("core.gethash", LispData.externalCall("gethash") { args, reportError ->
+            if (args.size != 2) {
+                return@externalCall reportError("Hash access needs 2 arguments")
+            }
+            val (hash, name) = args
+            if (hash !is LispData.LispHash) {
+                return@externalCall reportError("$hash is not a hash")
+            }
+            val nameS =
+                atomOrStringToString(name) ?: return@externalCall reportError("$name is not an atom or a string")
+            hash.map[nameS] ?: LispData.LispNil
+        })
+        bindings.setValueLocal("core.mergehash", LispData.externalCall("mergehash") { args, reportError ->
+            val m = mutableMapOf<String, LispData>()
+            for (arg in args) {
+                if (arg !is LispData.LispHash) {
+                    return@externalCall reportError("$arg is not a hash")
+                }
+                m.putAll(arg.map)
+            }
+            LispData.LispHash(m)
+        })
+    }
+
     fun offerAllTo(bindings: StackFrame) {
         bindings.setValueLocal("core.if", ifFun)
         bindings.setValueLocal("core.nil", LispData.LispNil)
@@ -244,5 +288,6 @@ object CoreBindings {
         bindings.setValueLocal("core.reflect.type", reflect)
         bindings.setValueLocal("core.debuglog", debuglog)
         offerArithmeticTo(bindings)
+        offerHashesTo(bindings)
     }
 }

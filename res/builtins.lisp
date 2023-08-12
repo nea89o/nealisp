@@ -52,3 +52,11 @@
 (defun not (v) (if v false true))
 (defun ^ (l r) (if l (not r) r))
 (export | & not ^)
+
+(comment "Re-export hashes")
+(def hash.new core.newhash)
+(def hash.merge core.mergehash)
+(def hash.get core.gethash)
+(export hash.new hash.merge hash.get)
+
+
