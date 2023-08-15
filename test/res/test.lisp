@@ -30,3 +30,9 @@
     ((test.assert-eq (hash.get funnyhash :tesst3) nil))
     ))
 
+(test.test "Hex literals" (seq
+    ((test.assert-eqd 0x0 0 0.0001))
+    ((test.assert-eqd 0xFF 255 0.0001))
+    ((test.assert-eqd 0xFFFFFFFF 4294967295 0.0001))
+    ))
+

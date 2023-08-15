@@ -20,3 +20,10 @@
       (= actual expected)
       (stringify "Expected" expected "got" actual)))
 (export test.assert-eq)
+
+(comment "Assert that two number arguments are equal with some tolerance. Returns a closure")
+(defun test.assert-eqd (actual expected tolerance) (seq
+  (test.assert
+      (lt (abs (- expected actual)) tolerance)
+      (stringify "Expected" expected "got" actual "with a tolerance of" tolerance))))
+(export test.assert-eqd)

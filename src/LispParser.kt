@@ -15,6 +15,7 @@ class LispParser private constructor(filename: String, string: String) {
         }
 
         val digits = "1234567890"
+        val hexDigits = digits + "abcdefABCDEF"
         val alphabet = "abcdefghijklmnopqrstuvwxyz"
         val validStartingIdentifiers = "-.#+*'!$%&/=?_~|^" + alphabet + alphabet.uppercase()
         val validIdentifiers = validStartingIdentifiers + digits
@@ -62,11 +63,14 @@ class LispParser private constructor(filename: String, string: String) {
     fun parseNumber(): LispAst.NumberLiteral {
         val start = racer.idx
         racer.pushState()
-        val number = racer.consumeWhile { it.last().let { it in digits || it == '.' } }
-        val double = number.toDoubleOrNull()
+        val number = racer.consumeWhile { it.last().let { it in hexDigits || it == '.' || it == 'x' } }
+        var double = number.toDoubleOrNull()
+        if (number.startsWith("0x")) {
+            double = number.substring(2).toLong(16).toDouble()
+        }
         if (double == null) {
             racer.popState()
-            racer.error("Could not parse number")
+            racer.error("Could not parse number $number")
         }
         racer.discardState()
         return LispAst.NumberLiteral(racer.span(start), double)

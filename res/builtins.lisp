@@ -28,6 +28,9 @@
 (defun gt (l r) (lt r l))
 (export gt)
 
+(comment "The absolute value returns the argument if it is non negative or (- 0 arg) if it is")
+(defun abs (arg) (if (lt arg 0) (- 0 arg) arg))
+(export abs)
 
 (comment "if! a strict version of a regular if, meaning it evaluates both the falsy and the truthy case, instead of only one.")
 (defun if! (cond ifTrue ifFalse) (if cond ifTrue ifFalse))
