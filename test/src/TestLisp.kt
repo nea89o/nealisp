@@ -3,6 +3,7 @@ import moe.nea.lisp.LispParser
 import moe.nea.lisp.TestResultFormatter
 import java.io.File
 import javax.xml.stream.XMLOutputFactory
+import kotlin.system.exitProcess
 
 object T
 
@@ -21,4 +22,7 @@ fun main() {
         .createXMLStreamWriter(File("TestOutput.xml").bufferedWriter())
     TestResultFormatter.write(w, listOf(testResults))
     w.close()
+    if (testResults.allTests.any { it.failures.isNotEmpty() }) {
+        exitProcess(1)
+    }
 }
