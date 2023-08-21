@@ -9,10 +9,10 @@ object T
 
 object TestBindings {
     @LispBinding("funny-method")
-    fun funnyMethod(arg: Int, test: String, boolean: Boolean, ast: LispAst): LispData {
+    fun funnyMethod(arg: Int, test: String, boolean: Boolean, vararg ast: LispAst): LispData {
         if (boolean)
             println("From java: $test")
-        println(ast.toSource())
+        ast.forEach { println(it.toSource()) }
         return LispData.LispNumber(arg.toDouble())
     }
 
