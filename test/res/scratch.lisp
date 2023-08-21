@@ -25,4 +25,4 @@
 (debuglog "============")
 (debuglog "Running tests")
 
-(debuglog "This should be 1.0" (funny-method 1.1 "test" false))
+(debuglog "This should be 1.0" (funny-method 1.1 "test" false (test 1 2 3 4 /)))

@@ -8,74 +8,80 @@ import java.lang.reflect.Parameter
 
 class AutoBinder {
 
-    private fun mapLispData(parameter: Parameter): ((Iterator<LispData>, ErrorReporter) -> Any)? {
-        if (LispData::class.java.isAssignableFrom(parameter.type)) return { a, b -> parameter.type.cast(a.next()) }
+    private fun mapLispData(parameter: Parameter): ((() -> LispData, () -> LispAst, ErrorReporter) -> Any)? {
+        if (LispData::class.java.isAssignableFrom(parameter.type)) return { a, b, c -> parameter.type.cast(a()) }
         return null
     }
 
-    private fun mapErrorReporter(parameter: Parameter): ((Iterator<LispData>, ErrorReporter) -> Any)? {
-        if (ErrorReporter::class.java.isAssignableFrom(parameter.type)) return { a, b -> b }
+    private fun mapErrorReporter(parameter: Parameter): ((() -> LispData, () -> LispAst, ErrorReporter) -> Any)? {
+        if (ErrorReporter::class.java.isAssignableFrom(parameter.type)) return { a, b, c -> c }
         return null
     }
 
-    private fun mapString(parameter: Parameter): ((Iterator<LispData>, ErrorReporter) -> Any?)? {
-        if (String::class.java == parameter.type) return { a, b ->
-            when (val x = a.next()) {
+    private fun mapString(parameter: Parameter): ((() -> LispData, () -> LispAst, ErrorReporter) -> Any?)? {
+        if (String::class.java == parameter.type) return { a, b, c ->
+            when (val x = a()) {
                 is LispData.LispString -> x.string
                 is LispData.Atom -> x.label
-                else -> null.also { b.reportError("Could not coerce $x to string") }
+                else -> null.also { c.reportError("Could not coerce $x to string") }
             }
         }
         return null
     }
 
-    private fun mapBoolean(parameter: Parameter): ((Iterator<LispData>, ErrorReporter) -> Any?)? {
-        if (Boolean::class.java.isAssignableFrom(parameter.type)) return { a, b ->
-            val x = a.next()
+    private fun mapBoolean(parameter: Parameter): ((() -> LispData, () -> LispAst, ErrorReporter) -> Any?)? {
+        if (Boolean::class.java.isAssignableFrom(parameter.type)) return { a, b, c ->
+            val x = a()
             val y = CoreBindings.isTruthy(x)
             if (y == null) {
-                b.reportError("Could not coerce $x to a boolean")
+                c.reportError("Could not coerce $x to a boolean")
             }
             y
         }
         return null
     }
 
-    private fun mapNumber(parameter: Parameter): ((Iterator<LispData>, ErrorReporter) -> Any?)? {
-        if (Double::class.java.isAssignableFrom(parameter.type)) return { a, b ->
-            when (val x = a.next()) {
+    private fun mapAST(parameter: Parameter): ((() -> LispData, () -> LispAst, ErrorReporter) -> Any?)? {
+        if (LispAst::class.java.isAssignableFrom(parameter.type)) return { a, b, c -> parameter.type.cast(b()) }
+        return null
+    }
+
+    private fun mapNumber(parameter: Parameter): ((() -> LispData, () -> LispAst, ErrorReporter) -> Any?)? {
+        if (Double::class.java.isAssignableFrom(parameter.type)) return { a, b, c ->
+            when (val x = a()) {
                 is LispData.LispNumber -> x.value
-                else -> null.also { b.reportError("Could not coerce $x to number") }
+                else -> null.also { c.reportError("Could not coerce $x to number") }
             }
         }
-        if (Float::class.java.isAssignableFrom(parameter.type)) return { a, b ->
-            when (val x = a.next()) {
+        if (Float::class.java.isAssignableFrom(parameter.type)) return { a, b, c ->
+            when (val x = a()) {
                 is LispData.LispNumber -> x.value.toFloat()
-                else -> null.also { b.reportError("Could not coerce $x to number") }
+                else -> null.also { c.reportError("Could not coerce $x to number") }
             }
         }
-        if (Int::class.java.isAssignableFrom(parameter.type)) return { a, b ->
-            when (val x = a.next()) {
+        if (Int::class.java.isAssignableFrom(parameter.type)) return { a, b, c ->
+            when (val x = a()) {
                 is LispData.LispNumber -> x.value.toInt()
-                else -> null.also { b.reportError("Could not coerce $x to number") }
+                else -> null.also { c.reportError("Could not coerce $x to number") }
             }
         }
-        if (Long::class.java.isAssignableFrom(parameter.type)) return { a, b ->
-            when (val x = a.next()) {
+        if (Long::class.java.isAssignableFrom(parameter.type)) return { a, b, c ->
+            when (val x = a()) {
                 is LispData.LispNumber -> x.value.toLong()
-                else -> null.also { b.reportError("Could not coerce $x to number") }
+                else -> null.also { c.reportError("Could not coerce $x to number") }
             }
         }
         return null
     }
 
 
-    val objectMappers = mutableListOf<((Parameter) -> (((Iterator<LispData>, ErrorReporter) -> Any?)?))>(
+    val objectMappers = mutableListOf<((Parameter) -> (((() -> LispData, () -> LispAst, ErrorReporter) -> Any?)?))>(
         ::mapLispData,
         ::mapErrorReporter,
         ::mapNumber,
         ::mapString,
         ::mapBoolean,
+        ::mapAST,
     )
 
 
@@ -101,19 +107,22 @@ class AutoBinder {
             objectMappers.firstNotNullOfOrNull { it.invoke(param) }
                 ?: error("Could not find object mapper for parameter $param")
         }
-        return LispData.externalCall(name) { args, fReportError ->
+        return LispData.externalRawCall(name) { context: LispExecutionContext, callsite: LispAst.LispNode, stackFrame: StackFrame, args: List<LispAst.LispNode> ->
+            val e = object : ErrorReporter {
+                override fun reportError(string: String): LispData {
+                    return stackFrame.reportError(string, callsite)
+                }
+            }
             try {
                 val iterator = args.iterator()
-                val e = object : ErrorReporter {
-                    override fun reportError(string: String): LispData {
-                        return fReportError(string)
-                    }
+                val p = objectMappers.map {
+                    it.invoke({ context.resolveValue(stackFrame, iterator.next()) }, { iterator.next() }, e)
+                        ?: return@externalRawCall LispData.LispNil
                 }
-                val p = objectMappers.map { it.invoke(iterator, e) ?: return@externalCall LispData.LispNil }
-                if (iterator.hasNext()) return@externalCall fReportError("Too many arguments")
+                if (iterator.hasNext()) return@externalRawCall e.reportError("Too many arguments")
                 mh.invokeWithArguments(p) as LispData
-            } catch (e: Exception) {
-                fReportError("$name threw an exception: $e")
+            } catch (x: Exception) {
+                e.reportError("$name threw an exception", x)
             }
         }
     }

@@ -1,4 +1,4 @@
-<?xml version="1.0" ?><testsuites><testsuite name="Test" tests="0" skipped="0" failures="0" errors="0" timestamp="2023-08-21T04:12:42"><properties></properties><system-out><![CDATA[Hello, World, here is an atom: :iamanatom
+<?xml version="1.0" ?><testsuites><testsuite name="Test" tests="0" skipped="0" failures="0" errors="0" timestamp="2023-08-21T04:26:56"><properties></properties><system-out><![CDATA[Hello, World, here is an atom: :iamanatom
 :myfunworks
 :atom
 a :test

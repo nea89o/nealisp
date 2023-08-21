@@ -1,7 +1,4 @@
-import moe.nea.lisp.LispData
-import moe.nea.lisp.LispExecutionContext
-import moe.nea.lisp.LispParser
-import moe.nea.lisp.TestResultFormatter
+import moe.nea.lisp.*
 import moe.nea.lisp.bind.AutoBinder
 import moe.nea.lisp.bind.LispBinding
 import java.io.File
@@ -12,9 +9,10 @@ object T
 
 object TestBindings {
     @LispBinding("funny-method")
-    fun funnyMethod(arg: Int, test: String, boolean: Boolean): LispData {
+    fun funnyMethod(arg: Int, test: String, boolean: Boolean, ast: LispAst): LispData {
         if (boolean)
             println("From java: $test")
+        println(ast.toSource())
         return LispData.LispNumber(arg.toDouble())
     }
 
