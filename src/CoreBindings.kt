@@ -15,7 +15,7 @@ object CoreBindings {
         return@externalRawCall stackFrame.setValueLocal(name.label, context.resolveValue(stackFrame, value))
     }
 
-    private fun isTruthy(data: LispData): Boolean? {
+    fun isTruthy(data: LispData): Boolean? {
         if (data == trueValue) return true
         if (data == falseValue) return false
         return null

@@ -2,7 +2,6 @@ package moe.nea.lisp
 
 class LispExecutionContext() {
 
-    private val errorReporter = LispErrorReporter()
     val rootStackFrame = StackFrame(null)
     val unloadedModules = mutableMapOf<String, LispAst.Program>()
     val modules = mutableMapOf<String, Map<String, LispData>>()

@@ -1,0 +1,23 @@
+<?xml version="1.0" ?><testsuites><testsuite name="Test" tests="0" skipped="0" failures="0" errors="0" timestamp="2023-08-21T04:12:42"><properties></properties><system-out><![CDATA[Hello, World, here is an atom: :iamanatom
+:myfunworks
+:atom
+a :test
+... [:work, :whatever]
+<native function pure.r> hello world
++ 16.2
+- -2.0
+* 100.0
+/ 0.16666666666666666
+============
+left evaluated
+truthy value
+left evaluated
+falsey value
+============
+Error: Could not resolve variable sc at /home/nea/src/nealisp/build/resources/test/scratch.lisp:21:30 until 21:32
+This should fail nil
+This should work 42.0
+============
+Running tests
+This should be 1.0 1.0
+]]></system-out></testsuite></testsuites>

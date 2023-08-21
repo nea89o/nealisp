@@ -10,8 +10,13 @@ class LispParser private constructor(filename: String, string: String) {
         fun parse(filename: String, string: String): LispAst.Program {
             return LispParser(filename, string).program
         }
+
         fun parse(file: File): LispAst.Program {
             return parse(file.absolutePath, file.readText())
+        }
+
+        fun isValidIdentifier(name: String): Boolean {
+            return name.isNotEmpty() && name.first() in validStartingIdentifiers && name.all { it in validIdentifiers }
         }
 
         val digits = "1234567890"
