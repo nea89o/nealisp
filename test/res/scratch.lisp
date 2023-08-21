@@ -6,14 +6,21 @@
     (debuglog "a" a)
     (debuglog "..." ...)))
 (testlog :test :work :whatever)
-(def helloworld (pure "hello world"))
+(def helloworld
+    (pure "hello world"))
 (debuglog helloworld (helloworld))
 (debuglog "+" (+ 1.2 15))
 (debuglog "-" (- 1 3))
 (debuglog "*" (* 10 10))
 (debuglog "/" (/ 1 3 2))
 (debuglog "============")
-(defun testsomething (c) (debuglog (if! c (seq (debuglog "left evaluated") (return "truthy value")) "falsey value")))
+(defun testsomething (c)
+    (debuglog
+        (if! c
+            (seq
+                (debuglog "left evaluated")
+                (return "truthy value"))
+            "falsey value")))
 (testsomething true)
 (testsomething false)
 (noop)

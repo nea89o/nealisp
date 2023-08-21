@@ -8,6 +8,7 @@ sealed class LispData {
     data class LispNumber(val value: Double) : LispData()
     data class LispNode(val node: LispAst.LispNode) : LispData()
     data class LispHash(val map: Map<String, LispData>) : LispData()
+    data class ForeignObject<T : Any?>(val obj: T) : LispData()
     class LispList(val elements: List<LispData>) : LispData()
     sealed class LispExecutable() : LispData() {
         abstract fun execute(
@@ -55,7 +56,6 @@ sealed class LispData {
             return executionContext.executeLisp(invocationFrame, body)
         }
     }
-
 
     companion object {
         fun externalRawCall(

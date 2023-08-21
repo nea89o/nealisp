@@ -118,6 +118,7 @@ object CoreBindings {
             is LispData.LispString -> thing.string
             is LispData.LispHash -> thing.map.asIterable().joinToString(", ", "{", "}") { it.key + ": " + it.value }
             is LispData.LispNumber -> thing.value.toString()
+            is LispData.ForeignObject<*> -> "<foreign ${thing.obj}>"
             is LispData.LispInterpretedCallable -> "<function ${thing.name ?: "<anonymous>"} ${thing.argNames} ${thing.body.toSource()}>"
         }
     }
@@ -225,6 +226,7 @@ object CoreBindings {
             LispData.LispNil -> LispData.Atom("nil")
             is LispData.LispHash -> LispData.Atom("hash")
             is LispData.LispNode -> LispData.Atom("ast")
+            is LispData.ForeignObject<*> -> LispData.Atom("foreign")
             is LispData.LispNumber -> LispData.Atom("number")
             is LispData.LispString -> LispData.Atom("string")
         }

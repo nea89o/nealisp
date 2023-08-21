@@ -36,7 +36,6 @@ class LispExecutionContext() {
         return testSuite
     }
 
-
     fun registerModule(moduleName: String, program: LispAst.Program) {
         if (moduleName in unloadedModules || moduleName in modules) {
             error("Cannot register already registered module $moduleName")
