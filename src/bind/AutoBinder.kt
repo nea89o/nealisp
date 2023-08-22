@@ -22,6 +22,22 @@ class AutoBinder {
         return null
     }
 
+    private fun mapForeignObject(parameter: Parameter): ObjectMapper? {
+        parameter.getAnnotation(UnmapForeignObject::class.java) ?: return null
+        return { a, b, c, d ->
+            when (val x = a()) {
+                is LispData.ForeignObject<*> -> {
+                    parameter.effectiveType.cast(x.obj)
+                }
+
+                else -> {
+                    c.reportError("$x needs to be of type")
+                    null
+                }
+            }
+        }
+    }
+
     private fun mapErrorReporter(parameter: Parameter): ObjectMapper? {
         if (ErrorReporter::class.java.isAssignableFrom(parameter.effectiveType)) return { a, b, c, d -> c }
         return null
@@ -95,6 +111,7 @@ class AutoBinder {
         ::mapString,
         ::mapBoolean,
         ::mapAST,
+        ::mapForeignObject,
     )
 
 

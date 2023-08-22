@@ -5,3 +5,7 @@ package moe.nea.lisp.bind
 annotation class LispBinding(
     val name: String,
 )
+
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class UnmapForeignObject
