@@ -1,6 +1,6 @@
 plugins { kotlin("jvm").version("1.7.20"); java; `maven-publish` }
 group = "moe.nea"
-version = "1.0.0"
+version = "1.1.0"
 repositories { mavenCentral() }
 java.toolchain { languageVersion.set(JavaLanguageVersion.of(8)) }
 java.withSourcesJar()
