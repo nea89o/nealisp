@@ -78,7 +78,7 @@ class LispExecutionContext() {
     fun executeProgram(stackFrame: StackFrame, program: LispAst.Program): LispData? {
         var lastValue: LispData? = null
         for (node in program.nodes) {
-            lastValue = executeLisp(stackFrame, node)
+            lastValue = resolveValue(stackFrame, node)
         }
         return lastValue
     }

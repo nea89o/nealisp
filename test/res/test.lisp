@@ -36,3 +36,29 @@
     ((test.assert-eqd 0xFFFFFFFF 4294967295 0.0001))
     ))
 
+(test.test "List joining" (seq
+    ((test.assert-eq
+        (list.new 1 2 3 4)
+        (list.join [list.new 1 2] [list.new 3 4])
+        ))
+    ))
+
+(test.test "List slicing" (seq
+    ((test.assert-eq
+        (list.slice [list.new 1 2 3 4] 2 4)
+        (list.new 3 4)
+        ))
+    ))
+
+(test.test "List length"
+    ((test.assert-eq [list.length (list.new 1 2 3 4)] 4))
+    )
+
+(test.test "List mapping"
+    ((test.assert-eq
+        [list.map (list.new 1 2 3 4) (lambda (x) (+ 1 x))]
+        [list.new 2 3 4 5]))
+    )
+
+
+

@@ -62,4 +62,16 @@
 (def hash.get core.gethash)
 (export hash.new hash.merge hash.get)
 
-
+(comment "Re-export List operations")
+(def list.new core.list.new)
+(def list.slice core.list.slice)
+(def list.length core.list.length)
+(def list.join core.list.join)
+(def list.at core.list.at)
+(defun list.map (list func)
+    (if [= 0 (list.length list)]
+        (list.new)
+        (list.join
+            (list.new (func (list.at list 0)))
+            (list.map (list.slice list 1 (list.length list)) func))))
+(export list.new list.slice list.length list.join list.at list.map)
